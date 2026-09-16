@@ -6,8 +6,10 @@
  *
  * - DataState refers to full state of the app: appState, elements, images,
  *   though some state is saved separately (collab username, library) for one
- *   reason or another. We also save different data to different storage
- *   (localStorage, indexedDB).
+ *   reason or another. We also save different data to different storage:
+ *   per-project scene data (elements/appState) and files both live in
+ *   IndexedDB (see `./projects` for the multi-project scene store), while
+ *   small cross-tab bookkeeping values stay in localStorage.
  */
 
 import { clearAppStateForLocalStorage } from "@excalidraw/excalidraw/appState";
@@ -44,11 +46,12 @@ import { SAVE_TO_LOCAL_STORAGE_TIMEOUT, STORAGE_KEYS } from "../app_constants";
 import { FileManager } from "./FileManager";
 import { FileStatusStore } from "./fileStatusStore";
 import { Locker } from "./Locker";
+import { ProjectsStorage } from "./projects";
 import { updateBrowserStateVersion } from "./tabSync";
 
 const filesStore = createStore("files-db", "files-store");
 
-export const localStorageQuotaExceededAtom = atom(false);
+export const sceneStorageQuotaExceededAtom = atom(false);
 
 class LocalFileManager extends FileManager {
   clearObsoleteFiles = async (opts: { currentFileIds: FileId[] }) => {
@@ -70,13 +73,12 @@ class LocalFileManager extends FileManager {
   };
 }
 
-const saveDataStateToLocalStorage = (
+const saveDataStateToProjectStorage = async (
+  projectId: string,
   elements: readonly ExcalidrawElement[],
   appState: AppState,
 ) => {
-  const localStorageQuotaExceeded = appJotaiStore.get(
-    localStorageQuotaExceededAtom,
-  );
+  const storageQuotaExceeded = appJotaiStore.get(sceneStorageQuotaExceededAtom);
   try {
     const _appState = clearAppStateForLocalStorage(appState);
 
@@ -87,29 +89,22 @@ const saveDataStateToLocalStorage = (
       _appState.openSidebar = null;
     }
 
-    localStorage.setItem(
-      STORAGE_KEYS.LOCAL_STORAGE_ELEMENTS,
-      JSON.stringify(getNonDeletedElements(elements)),
-    );
-    localStorage.setItem(
-      STORAGE_KEYS.LOCAL_STORAGE_APP_STATE,
-      JSON.stringify(_appState),
+    await ProjectsStorage.saveProjectScene(
+      projectId,
+      getNonDeletedElements(elements),
+      _appState,
     );
     updateBrowserStateVersion(STORAGE_KEYS.VERSION_DATA_STATE);
-    if (localStorageQuotaExceeded) {
-      appJotaiStore.set(localStorageQuotaExceededAtom, false);
+    if (storageQuotaExceeded) {
+      appJotaiStore.set(sceneStorageQuotaExceededAtom, false);
     }
   } catch (error: any) {
-    // Unable to access window.localStorage
+    // Unable to persist to IndexedDB (quota exceeded, private browsing, etc.)
     console.error(error);
-    if (isQuotaExceededError(error) && !localStorageQuotaExceeded) {
-      appJotaiStore.set(localStorageQuotaExceededAtom, true);
+    if (!storageQuotaExceeded) {
+      appJotaiStore.set(sceneStorageQuotaExceededAtom, true);
     }
   }
-};
-
-const isQuotaExceededError = (error: any) => {
-  return error instanceof DOMException && error.name === "QuotaExceededError";
 };
 
 type SavingLockTypes = "collaboration";
@@ -117,12 +112,13 @@ type SavingLockTypes = "collaboration";
 export class LocalData {
   private static _save = debounce(
     async (
+      projectId: string,
       elements: readonly ExcalidrawElement[],
       appState: AppState,
       files: BinaryFiles,
       onFilesSaved: () => void,
     ) => {
-      saveDataStateToLocalStorage(elements, appState);
+      await saveDataStateToProjectStorage(projectId, elements, appState);
 
       await this.fileStorage.saveFiles({
         elements,
@@ -133,16 +129,17 @@ export class LocalData {
     SAVE_TO_LOCAL_STORAGE_TIMEOUT,
   );
 
-  /** Saves DataState, including files. Bails if saving is paused */
+  /** Saves DataState, including files, to the given project. Bails if saving is paused */
   static save = (
+    projectId: string | null,
     elements: readonly ExcalidrawElement[],
     appState: AppState,
     files: BinaryFiles,
     onFilesSaved: () => void,
   ) => {
     // we need to make the `isSavePaused` check synchronously (undebounced)
-    if (!this.isSavePaused()) {
-      this._save(elements, appState, files, onFilesSaved);
+    if (projectId && !this.isSavePaused()) {
+      this._save(projectId, elements, appState, files, onFilesSaved);
     }
   };
 

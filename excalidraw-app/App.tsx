@@ -46,6 +46,7 @@ import {
   exportToPlus,
   share,
   youtubeIcon,
+  LibraryIcon,
 } from "@excalidraw/excalidraw/components/icons";
 import { isElementLink } from "@excalidraw/element";
 import {
@@ -64,6 +65,7 @@ import {
 import type { RemoteExcalidrawElement } from "@excalidraw/excalidraw/data/reconcile";
 import type { RestoredDataState } from "@excalidraw/excalidraw/data/restore";
 import type {
+  ExcalidrawElement,
   FileId,
   NonDeletedExcalidrawElement,
   OrderedExcalidrawElement,
@@ -117,18 +119,22 @@ import {
 
 import { updateStaleImageStatuses } from "./data/FileManager";
 import { FileStatusStore } from "./data/fileStatusStore";
-import {
-  importFromLocalStorage,
-  importUsernameFromLocalStorage,
-} from "./data/localStorage";
+import { importUsernameFromLocalStorage } from "./data/localStorage";
 
 import { loadFilesFromFirebase } from "./data/firebase";
 import {
   LibraryIndexedDBAdapter,
   LibraryLocalStorageMigrationAdapter,
   LocalData,
-  localStorageQuotaExceededAtom,
+  sceneStorageQuotaExceededAtom,
 } from "./data/LocalData";
+import {
+  activeProjectAtom,
+  ensureActiveProject,
+  ProjectsStorage,
+  setActiveProjectId,
+  type StorableAppState,
+} from "./data/projects";
 import { isBrowserStorageStateNewer } from "./data/tabSync";
 import { ShareDialog, shareDialogStateAtom } from "./share/ShareDialog";
 import CollabError, { collabErrorIndicatorAtom } from "./collab/CollabError";
@@ -148,6 +154,7 @@ import "./index.scss";
 
 import { ExcalidrawPlusPromoBanner } from "./components/ExcalidrawPlusPromoBanner";
 import { AppSidebar } from "./components/AppSidebar";
+import { ProjectsDialog } from "./components/ProjectsDialog";
 
 import type { CollabAPI } from "./collab/Collab";
 
@@ -217,6 +224,11 @@ const shareableLinkConfirmDialog = {
 const initializeScene = async (opts: {
   collabAPI: CollabAPI | null;
   excalidrawAPI: ExcalidrawImperativeAPI;
+  /** the active project's current scene, as persisted in IndexedDB */
+  localDataState: {
+    elements: readonly ExcalidrawElement[];
+    appState: StorableAppState | null;
+  };
 }): Promise<
   { scene: ExcalidrawInitialDataState | null } & (
     | { isExternalScene: true; id: string; key: string }
@@ -230,7 +242,7 @@ const initializeScene = async (opts: {
   );
   const externalUrlMatch = window.location.hash.match(/^#url=(.*)$/);
 
-  const localDataState = importFromLocalStorage();
+  const { localDataState } = opts;
 
   let scene: Omit<
     RestoredDataState,
@@ -372,6 +384,23 @@ const initializeScene = async (opts: {
   return { scene: null, isExternalScene: false };
 };
 
+/** reads the given project's currently persisted scene out of IndexedDB */
+const readProjectLocalDataState = async (
+  projectId: string | null,
+): Promise<{
+  elements: readonly ExcalidrawElement[];
+  appState: StorableAppState | null;
+}> => {
+  if (!projectId) {
+    return { elements: [], appState: null };
+  }
+  const record = await ProjectsStorage.loadProject(projectId);
+  return {
+    elements: record?.elements ?? [],
+    appState: record?.appState ?? null,
+  };
+};
+
 const ExcalidrawWrapper = () => {
   const excalidrawAPI = useExcalidrawAPI();
 
@@ -406,6 +435,12 @@ const ExcalidrawWrapper = () => {
   }, []);
 
   const [, setShareDialogState] = useAtom(shareDialogStateAtom);
+  const [isProjectsDialogOpen, setIsProjectsDialogOpen] = useState(false);
+  const [activeProject, setActiveProject] = useAtom(activeProjectAtom);
+  const activeProjectIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    activeProjectIdRef.current = activeProject?.id ?? null;
+  }, [activeProject]);
   const [collabAPI] = useAtom(collabAPIAtom);
   const [isCollaborating] = useAtomWithInitialValue(isCollaboratingAtom, () => {
     return isCollaborationLink(window.location.href);
@@ -562,9 +597,21 @@ const ExcalidrawWrapper = () => {
       return;
     }
 
-    initializeScene({ collabAPI, excalidrawAPI }).then(async (data) => {
-      loadImages(data, /* isInitialLoad */ true);
-      initialStatePromiseRef.current.promise.resolve(data.scene);
+    ensureActiveProject().then((project) => {
+      setActiveProject({ id: project.id, name: project.name });
+      activeProjectIdRef.current = project.id;
+
+      initializeScene({
+        collabAPI,
+        excalidrawAPI,
+        localDataState: {
+          elements: project.elements,
+          appState: project.appState,
+        },
+      }).then(async (data) => {
+        loadImages(data, /* isInitialLoad */ true);
+        initialStatePromiseRef.current.promise.resolve(data.scene);
+      });
     });
 
     const onHashChange = async (event: HashChangeEvent) => {
@@ -579,22 +626,27 @@ const ExcalidrawWrapper = () => {
         }
         excalidrawAPI.updateScene({ appState: { isLoading: true } });
 
-        initializeScene({ collabAPI, excalidrawAPI }).then((data) => {
-          loadImages(data);
-          if (data.scene) {
-            excalidrawAPI.updateScene({
-              elements: restoreElements(data.scene.elements, null, {
-                repairBindings: true,
-              }),
-              appState: restoreAppState(data.scene.appState, null),
-              captureUpdate: CaptureUpdateAction.IMMEDIATELY,
-            });
-          }
-        });
+        const localDataState = await readProjectLocalDataState(
+          activeProjectIdRef.current,
+        );
+        initializeScene({ collabAPI, excalidrawAPI, localDataState }).then(
+          (data) => {
+            loadImages(data);
+            if (data.scene) {
+              excalidrawAPI.updateScene({
+                elements: restoreElements(data.scene.elements, null, {
+                  repairBindings: true,
+                }),
+                appState: restoreAppState(data.scene.appState, null),
+                captureUpdate: CaptureUpdateAction.IMMEDIATELY,
+              });
+            }
+          },
+        );
       }
     };
 
-    const syncData = debounce(() => {
+    const syncData = debounce(async () => {
       if (isTestEnv()) {
         return;
       }
@@ -604,11 +656,16 @@ const ExcalidrawWrapper = () => {
       ) {
         // don't sync if local state is newer or identical to browser state
         if (isBrowserStorageStateNewer(STORAGE_KEYS.VERSION_DATA_STATE)) {
-          const localDataState = importFromLocalStorage();
+          const localDataState = await readProjectLocalDataState(
+            activeProjectIdRef.current,
+          );
           const username = importUsernameFromLocalStorage();
           setLangCode(getPreferredLanguage());
           excalidrawAPI.updateScene({
-            ...localDataState,
+            elements: localDataState.elements,
+            appState: localDataState.appState
+              ? { ...getDefaultAppState(), ...localDataState.appState }
+              : undefined,
             captureUpdate: CaptureUpdateAction.NEVER,
           });
           LibraryIndexedDBAdapter.load().then((data) => {
@@ -685,7 +742,14 @@ const ExcalidrawWrapper = () => {
         false,
       );
     };
-  }, [isCollabDisabled, collabAPI, excalidrawAPI, setLangCode, loadImages]);
+  }, [
+    isCollabDisabled,
+    collabAPI,
+    excalidrawAPI,
+    setLangCode,
+    loadImages,
+    setActiveProject,
+  ]);
 
   useEffect(() => {
     const unloadHandler = (event: BeforeUnloadEvent) => {
@@ -724,33 +788,41 @@ const ExcalidrawWrapper = () => {
     // this check is redundant, but since this is a hot path, it's best
     // not to evaludate the nested expression every time
     if (!LocalData.isSavePaused()) {
-      LocalData.save(elements, appState, files, () => {
-        if (excalidrawAPI) {
-          let didChange = false;
+      LocalData.save(
+        activeProjectIdRef.current,
+        elements,
+        appState,
+        files,
+        () => {
+          if (excalidrawAPI) {
+            let didChange = false;
 
-          const elements = excalidrawAPI
-            .getSceneElementsIncludingDeleted()
-            .map((element) => {
-              if (
-                LocalData.fileStorage.shouldUpdateImageElementStatus(element)
-              ) {
-                const newElement = newElementWith(element, { status: "saved" });
-                if (newElement !== element) {
-                  didChange = true;
+            const elements = excalidrawAPI
+              .getSceneElementsIncludingDeleted()
+              .map((element) => {
+                if (
+                  LocalData.fileStorage.shouldUpdateImageElementStatus(element)
+                ) {
+                  const newElement = newElementWith(element, {
+                    status: "saved",
+                  });
+                  if (newElement !== element) {
+                    didChange = true;
+                  }
+                  return newElement;
                 }
-                return newElement;
-              }
-              return element;
-            });
+                return element;
+              });
 
-          if (didChange) {
-            excalidrawAPI.updateScene({
-              elements,
-              captureUpdate: CaptureUpdateAction.NEVER,
-            });
+            if (didChange) {
+              excalidrawAPI.updateScene({
+                elements,
+                captureUpdate: CaptureUpdateAction.NEVER,
+              });
+            }
           }
-        }
-      });
+        },
+      );
     }
 
     // Render the debug scene if the debug canvas is available
@@ -823,11 +895,77 @@ const ExcalidrawWrapper = () => {
 
   const isOffline = useAtomValue(isOfflineAtom);
 
-  const localStorageQuotaExceeded = useAtomValue(localStorageQuotaExceededAtom);
+  const sceneStorageQuotaExceeded = useAtomValue(sceneStorageQuotaExceededAtom);
 
   const onCollabDialogOpen = useCallback(
     () => setShareDialogState({ isOpen: true, type: "collaborationOnly" }),
     [setShareDialogState],
+  );
+
+  // ---------------------------------------------------------------------------
+  // projects — switching the live canvas to a different project's scene
+  // ---------------------------------------------------------------------------
+  const switchToProject = useCallback(
+    async (projectId: string) => {
+      if (!excalidrawAPI || projectId === activeProjectIdRef.current) {
+        return;
+      }
+      // make sure the project we're leaving has its latest edits persisted
+      LocalData.flushSave();
+
+      const record = await ProjectsStorage.loadProject(projectId);
+      if (!record) {
+        return;
+      }
+
+      setActiveProjectId(projectId);
+      activeProjectIdRef.current = projectId;
+      setActiveProject({ id: projectId, name: record.name });
+
+      excalidrawAPI.updateScene({
+        elements: restoreElements(record.elements, null, {
+          repairBindings: true,
+          deleteInvisibleElements: true,
+        }),
+        appState: {
+          ...restoreAppState(record.appState, excalidrawAPI.getAppState()),
+          isLoading: false,
+        },
+        captureUpdate: CaptureUpdateAction.IMMEDIATELY,
+      });
+      // don't let undo cross project boundaries
+      excalidrawAPI.history.clear();
+
+      const fileIds = record.elements.reduce((acc, element) => {
+        if (isInitializedImageElement(element)) {
+          acc.push(element.fileId);
+        }
+        return acc;
+      }, [] as FileId[]);
+      if (fileIds.length) {
+        LocalData.fileStorage
+          .getFiles(fileIds)
+          .then(({ loadedFiles, erroredFiles }) => {
+            if (loadedFiles.length) {
+              excalidrawAPI.addFiles(loadedFiles);
+            }
+            updateStaleImageStatuses({
+              excalidrawAPI,
+              erroredFiles,
+              elements: excalidrawAPI.getSceneElementsIncludingDeleted(),
+            });
+          });
+      }
+    },
+    [excalidrawAPI, setActiveProject],
+  );
+
+  const createAndSwitchToNewProject = useCallback(
+    async (name: string) => {
+      const meta = await ProjectsStorage.createProject(name);
+      await switchToProject(meta.id);
+    },
+    [switchToProject],
   );
 
   // ---------------------------------------------------------------------------
@@ -1033,6 +1171,8 @@ const ExcalidrawWrapper = () => {
           isCollabEnabled={!isCollabDisabled}
           theme={appTheme}
           refresh={() => forceRefresh((prev) => !prev)}
+          activeProjectName={activeProject?.name ?? null}
+          onOpenProjects={() => setIsProjectsDialogOpen(true)}
         />
         <AppWelcomeScreen
           onCollabDialogOpen={onCollabDialogOpen}
@@ -1067,7 +1207,7 @@ const ExcalidrawWrapper = () => {
             {t("alerts.collabOfflineWarning")}
           </div>
         )}
-        {localStorageQuotaExceeded && (
+        {sceneStorageQuotaExceeded && (
           <div className="alert alert--danger">
             {t("alerts.localStorageQuotaExceeded")}
           </div>
@@ -1102,6 +1242,14 @@ const ExcalidrawWrapper = () => {
 
         <AppSidebar />
 
+        {isProjectsDialogOpen && (
+          <ProjectsDialog
+            onClose={() => setIsProjectsDialogOpen(false)}
+            onOpenProject={switchToProject}
+            onCreateProject={createAndSwitchToNewProject}
+          />
+        )}
+
         {errorMessage && (
           <ErrorDialog onClose={() => setErrorMessage("")}>
             {errorMessage}
@@ -1110,6 +1258,23 @@ const ExcalidrawWrapper = () => {
 
         <CommandPalette
           customCommandPaletteItems={[
+            {
+              label: t("projectsDialog.title"),
+              category: DEFAULT_CATEGORIES.app,
+              keywords: [
+                "projects",
+                "open",
+                "new",
+                "switch",
+                "file",
+                "scene",
+                "drawing",
+              ],
+              icon: LibraryIcon,
+              perform: () => {
+                setIsProjectsDialogOpen(true);
+              },
+            },
             {
               label: t("labels.liveCollaboration"),
               category: DEFAULT_CATEGORIES.app,

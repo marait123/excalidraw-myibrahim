@@ -12,20 +12,14 @@ import { useEffect, useState } from "react";
 import type { NonDeletedExcalidrawElement } from "@excalidraw/element/types";
 import type { UIAppState } from "@excalidraw/excalidraw/types";
 
-import {
-  getElementsStorageSize,
-  getTotalStorageSize,
-} from "./data/localStorage";
+import { getActiveProjectStorageSize } from "./data/projects";
 
 type StorageSizes = { scene: number; total: number };
 
 const STORAGE_SIZE_TIMEOUT = 500;
 
 const getStorageSizes = debounce((cb: (sizes: StorageSizes) => void) => {
-  cb({
-    scene: getElementsStorageSize(),
-    total: getTotalStorageSize(),
-  });
+  getActiveProjectStorageSize().then(cb);
 }, STORAGE_SIZE_TIMEOUT);
 
 type Props = {

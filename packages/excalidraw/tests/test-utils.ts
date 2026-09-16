@@ -134,13 +134,13 @@ export class GlobalTestState {
 const initLocalStorage = (data: ImportedDataState) => {
   if (data.elements) {
     localStorage.setItem(
-      STORAGE_KEYS.LOCAL_STORAGE_ELEMENTS,
+      STORAGE_KEYS.__LEGACY_LOCAL_STORAGE_ELEMENTS,
       JSON.stringify(data.elements),
     );
   }
   if (data.appState) {
     localStorage.setItem(
-      STORAGE_KEYS.LOCAL_STORAGE_APP_STATE,
+      STORAGE_KEYS.__LEGACY_LOCAL_STORAGE_APP_STATE,
       JSON.stringify(data.appState),
     );
   }

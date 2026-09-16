@@ -34,13 +34,23 @@ export const importUsernameFromLocalStorage = (): string | null => {
   return null;
 };
 
-export const importFromLocalStorage = () => {
+/**
+ * Reads the pre-multi-project single-scene data out of its old localStorage
+ * keys. Used exactly once, by `ensureActiveProject`, to migrate an existing
+ * user's canvas into their first project. Do not use for anything else —
+ * scene data now lives in IndexedDB, see `./projects`.
+ */
+export const importLegacySceneFromLocalStorage = () => {
   let savedElements = null;
   let savedState = null;
 
   try {
-    savedElements = localStorage.getItem(STORAGE_KEYS.LOCAL_STORAGE_ELEMENTS);
-    savedState = localStorage.getItem(STORAGE_KEYS.LOCAL_STORAGE_APP_STATE);
+    savedElements = localStorage.getItem(
+      STORAGE_KEYS.__LEGACY_LOCAL_STORAGE_ELEMENTS,
+    );
+    savedState = localStorage.getItem(
+      STORAGE_KEYS.__LEGACY_LOCAL_STORAGE_APP_STATE,
+    );
   } catch (error: any) {
     // Unable to access localStorage
     console.error(error);
@@ -73,26 +83,20 @@ export const importFromLocalStorage = () => {
   return { elements, appState };
 };
 
-export const getElementsStorageSize = () => {
+/** approximate serialized size (chars) of a project's elements, for display in stats */
+export const getElementsStorageSize = (elements: unknown) => {
   try {
-    const elements = localStorage.getItem(STORAGE_KEYS.LOCAL_STORAGE_ELEMENTS);
-    const elementsSize = elements?.length || 0;
-    return elementsSize;
+    return JSON.stringify(elements).length;
   } catch (error: any) {
     console.error(error);
     return 0;
   }
 };
 
-export const getTotalStorageSize = () => {
+/** approximate serialized size (chars) of a full project record, for display in stats */
+export const getTotalStorageSize = (project: unknown) => {
   try {
-    const appState = localStorage.getItem(STORAGE_KEYS.LOCAL_STORAGE_APP_STATE);
-    const collab = localStorage.getItem(STORAGE_KEYS.LOCAL_STORAGE_COLLAB);
-
-    const appStateSize = appState?.length || 0;
-    const collabSize = collab?.length || 0;
-
-    return appStateSize + collabSize + getElementsStorageSize();
+    return JSON.stringify(project).length;
   } catch (error: any) {
     console.error(error);
     return 0;

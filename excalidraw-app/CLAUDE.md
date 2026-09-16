@@ -29,10 +29,21 @@ On mount, `ensureActiveProject()` (`data/projects.ts`) resolves which project to
 `data/projects.ts` is the multi-project scene store, layered on top of the same IndexedDB (`idb-keyval`) used elsewhere in this app:
 
 - **`ProjectsStorage`** — CRUD for projects (`listProjects`, `createProject`, `loadProject`, `saveProjectScene`, `renameProject`, `deleteProject`). Each `ProjectRecord` holds `elements` + a `StorableAppState` (the same browser-persistable `AppState` subset `clearAppStateForLocalStorage` has always produced — not the full `AppState`, since fields like `width`/`height` are runtime-measured, not stored). A small `projects-index` key holds the lightweight `ProjectMetadata[]` list so the "My Projects" dialog doesn't need to load every project's full scene just to render a list.
-- **`activeProjectAtom`** — the currently open project's `{id, name}`, read by `AppMainMenu` (shown in the menu, opens `ProjectsDialog`) and `ProjectsDialog` (to highlight the active row). `App.tsx` also keeps an `activeProjectIdRef` in sync with this atom so hot paths (`onChange` autosave, cross-tab `syncData`) always save/read against the *current* project without a stale closure.
+- **`activeProjectAtom`** — the currently open project's `{id, name}`, read by `AppMainMenu` (shown in the menu, opens `ProjectsDialog`) and `ProjectsDialog` (to highlight the active row). `App.tsx` also keeps an `activeProjectIdRef` in sync with this atom so hot paths (`onChange` autosave, cross-tab `syncData`) always save/read against the _current_ project without a stale closure.
 - **Switching projects** (`switchToProject` in `App.tsx`) flushes the outgoing project's pending autosave, loads the target project's record, calls `excalidrawAPI.updateScene(...)`, and clears undo history (`excalidrawAPI.history.clear()`) so undo can't cross project boundaries.
 - Files/images are **not** duplicated per project — `LocalData.fileStorage` (content-addressed by `FileId`) is shared across all projects, same as before this feature.
-- Cross-tab sync (`data/tabSync.ts`) is scoped to *this tab's* `activeProjectIdRef`, not to whatever project another tab currently has active — two tabs open on the same project still sync; switching projects in one tab does not silently swap the scene showing in another.
+- Cross-tab sync (`data/tabSync.ts`) is scoped to _this tab's_ `activeProjectIdRef`, not to whatever project another tab currently has active — two tabs open on the same project still sync; switching projects in one tab does not silently swap the scene showing in another.
+
+## Presentation mode (frames as slides)
+
+`presentation/` implements the slides feature (the open-source repo has no presentation code; Excalidraw+'s is closed source). Frames are the slides:
+
+- **`slides.ts`** — `getSlides(elements)` returns non-deleted frame-like elements in reading order (rows top→bottom, then left→right; a frame joins a row when its vertical extent overlaps the row's by ≥ half the shorter one). Pure, unit-tested in `tests/slides.test.ts`.
+- **`usePresentation.ts`** — the controller hook, mounted once in `App.tsx`. `start()` snapshots view/zen/scroll/zoom, flushes then pauses autosave (`LocalData.pauseSave("presentation")`, so the presenting-only `viewModeEnabled`/`zenModeEnabled` never reach the project record), switches to view+zen mode, requests fullscreen, and fits one frame at a time via `excalidrawAPI.setViewport({ target: frame, fit: "contain", offsets })`. Arrow/Space/PageUp/PageDown/Home/End navigate, Esc exits; a `fullscreenchange` listener exits when the browser leaves fullscreen on its own. Keys are handled in the capture phase on `window` and stopped so Excalidraw's global handler doesn't also act on them. State is published through `presentationStateAtom`; controls through `presentationAPIAtom`, consumed by the main menu, the command palette, the Slides sidebar tab, and the overlay.
+- **`PresentationOverlay.tsx`** — the bottom-center control bar. It renders _outside_ `<Excalidraw>` (a sibling in `App.tsx`) so zen mode can't hide it; that's why it uses the plain `t()` function rather than `useI18n()` (the editor-scoped i18n provider doesn't exist outside the editor tree — the collab test catches this if it regresses).
+- **`components/AppSidebar.tsx`** — the "Slides" tab of the default sidebar: lists slides (subscribes to `excalidrawAPI.onChange`, refreshing at most once per animation frame), click to preview a frame or jump while presenting, plus a Present button.
+
+There are no Excalidraw+ upsell surfaces left in this app (banner, sign-up links, promo sidebar tabs, export-to-Plus, the `/excalidraw-plus-export` route and the `excplus-*` cookie checks were all removed).
 
 ## Collaboration and encryption
 

@@ -447,6 +447,15 @@
     "confirmDelete": "Click again to delete",
     "updated": "Updated"
   },
+  "presentation": {
+    "title": "Slides",
+    "present": "Present",
+    "exit": "Exit presentation",
+    "next": "Next slide",
+    "previous": "Previous slide",
+    "noFrames": "No slides yet. Use the Frame tool (F) to draw one — every frame becomes a slide.",
+    "orderHint": "Slides follow your frames in reading order: top to bottom, then left to right."
+  },
   "progressDialog": {
     "title": "Saving",
     "defaultMessage": "Preparing to save..."

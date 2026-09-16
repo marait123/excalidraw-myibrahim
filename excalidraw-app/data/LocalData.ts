@@ -107,7 +107,7 @@ const saveDataStateToProjectStorage = async (
   }
 };
 
-type SavingLockTypes = "collaboration";
+type SavingLockTypes = "collaboration" | "presentation";
 
 export class LocalData {
   private static _save = debounce(

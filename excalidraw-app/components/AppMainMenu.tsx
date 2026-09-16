@@ -1,9 +1,8 @@
 import {
-  loginIcon,
-  ExcalLogo,
   eyeIcon,
   LibraryIcon,
   ExternalLinkIcon,
+  presentationIcon,
 } from "@excalidraw/excalidraw/components/icons";
 import { useI18n } from "@excalidraw/excalidraw/i18n";
 import { MainMenu } from "@excalidraw/excalidraw/index";
@@ -14,7 +13,8 @@ import { isDevEnv } from "@excalidraw/common";
 import type { Theme } from "@excalidraw/element/types";
 
 import { LanguageList } from "../app-language/LanguageList";
-import { isExcalidrawPlusSignedUser } from "../app_constants";
+import { useAtomValue } from "../app-jotai";
+import { presentationAPIAtom } from "../presentation/usePresentation";
 
 import { saveDebugState } from "./DebugCanvas";
 
@@ -28,6 +28,7 @@ export const AppMainMenu: React.FC<{
   onOpenProjects: () => void;
 }> = React.memo((props) => {
   const { t } = useI18n();
+  const presentation = useAtomValue(presentationAPIAtom);
   return (
     <MainMenu>
       {props.activeProjectName && (
@@ -52,6 +53,12 @@ export const AppMainMenu: React.FC<{
       <MainMenu.Item icon={LibraryIcon} onSelect={props.onOpenProjects}>
         {t("projectsDialog.title")}
       </MainMenu.Item>
+      <MainMenu.Item
+        icon={presentationIcon}
+        onSelect={() => presentation?.start(0)}
+      >
+        {t("presentation.present")}
+      </MainMenu.Item>
       <MainMenu.Separator />
       <MainMenu.DefaultItems.LoadScene />
       <MainMenu.DefaultItems.SaveToActiveFile />
@@ -68,15 +75,6 @@ export const AppMainMenu: React.FC<{
       <MainMenu.DefaultItems.Help />
       <MainMenu.DefaultItems.ClearCanvas />
       <MainMenu.Separator />
-      <MainMenu.ItemLink
-        icon={ExcalLogo}
-        href={`${
-          import.meta.env.VITE_APP_PLUS_LP
-        }/plus?utm_source=excalidraw&utm_medium=app&utm_content=hamburger`}
-        className=""
-      >
-        Excalidraw+
-      </MainMenu.ItemLink>
       <MainMenu.DefaultItems.Socials />
       <MainMenu.ItemLink
         icon={ExternalLinkIcon}
@@ -84,15 +82,6 @@ export const AppMainMenu: React.FC<{
         className=""
       >
         Developed by myibrahim.cloud
-      </MainMenu.ItemLink>
-      <MainMenu.ItemLink
-        icon={loginIcon}
-        href={`${import.meta.env.VITE_APP_PLUS_APP}${
-          isExcalidrawPlusSignedUser ? "" : "/sign-up"
-        }?utm_source=signin&utm_medium=app&utm_content=hamburger`}
-        className="highlighted"
-      >
-        {isExcalidrawPlusSignedUser ? t("labels.signIn") : t("labels.signUp")}
       </MainMenu.ItemLink>
       {isDevEnv() && (
         <MainMenu.Item

@@ -1,0 +1,99 @@
+.PresentationOverlay {
+  position: fixed;
+  left: 50%;
+  bottom: 1.25rem;
+  transform: translateX(-50%);
+  z-index: 10000;
+
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.375rem 0.5rem;
+  border-radius: 999px;
+
+  background: rgba(30, 30, 30, 0.85);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(6px);
+  font-family: "Assistant", sans-serif;
+  font-size: 0.8125rem;
+  user-select: none;
+  animation: PresentationOverlay__fadeIn 200ms ease-out;
+
+  &__button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+
+    svg {
+      width: 1rem;
+      height: 1rem;
+    }
+
+    &:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.14);
+    }
+
+    &:disabled {
+      opacity: 0.35;
+      cursor: default;
+    }
+  }
+
+  &__label {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    padding: 0 0.5rem;
+    max-width: 18rem;
+  }
+
+  &__counter {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  &__title {
+    opacity: 0.75;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__divider {
+    width: 1px;
+    height: 1.25rem;
+    margin: 0 0.25rem;
+    background: rgba(255, 255, 255, 0.25);
+  }
+}
+
+// zen mode keeps its own "exit" button visible; it would fight the presenter bar
+.excalidraw-app.is-presenting .disable-zen-mode {
+  display: none;
+}
+
+@keyframes PresentationOverlay__fadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@media print {
+  .PresentationOverlay {
+    display: none;
+  }
+}

@@ -1,130 +1,132 @@
-import { DefaultSidebar, Sidebar, THEME } from "@excalidraw/excalidraw";
 import {
-  messageCircleIcon,
+  DefaultSidebar,
+  Sidebar,
+  useExcalidrawAPI,
+} from "@excalidraw/excalidraw";
+import { FilledButton } from "@excalidraw/excalidraw/components/FilledButton";
+import {
+  playerPlayIcon,
   presentationIcon,
 } from "@excalidraw/excalidraw/components/icons";
-import { LinkButton } from "@excalidraw/excalidraw/components/LinkButton";
 import { useUIAppState } from "@excalidraw/excalidraw/context/ui-appState";
+import { useI18n } from "@excalidraw/excalidraw/i18n";
+import { getFrameLikeTitle } from "@excalidraw/element";
+import clsx from "clsx";
+import { useEffect, useState } from "react";
+
+import { useAtomValue } from "../app-jotai";
+import { getSlides, getSlidesKey } from "../presentation/slides";
+import {
+  presentationAPIAtom,
+  presentationStateAtom,
+} from "../presentation/usePresentation";
 
 import "./AppSidebar.scss";
 
-type SidebarPromoCopyProps = {
-  text: string;
-};
+import type { Slide } from "../presentation/slides";
 
-const SidebarPromoCopy = (props: SidebarPromoCopyProps) => {
-  return (
-    <div className="app-sidebar-promo-copy">
-      <div className="app-sidebar-promo-illustration" aria-hidden="true">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 300 250"
-          className="app-sidebar-promo-heart"
-        >
-          <path
-            d="M 145 75
-           C 110 35, 60 55, 65 120
-           C 70 180, 140 190, 215 200
-           C 225 180, 260 110, 235 55
-           C 210 -5, 140 20, 160 105"
-            fill="none"
-            stroke="#D06B64"
-            strokeWidth="16"
-            strokeLinecap="round"
-          />
-        </svg>
+export const SLIDES_SIDEBAR_TAB = "slides";
 
-        <div className="app-sidebar-promo-trial-note excalifont">
-          14 days of
-          <br />
-          free trial
-        </div>
-        <svg
-          className="app-sidebar-promo-trial-arrow"
-          viewBox="0 0 72 48"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M5 6C23 1 50 8 48 32"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-          <path
-            d="M42 26L48 32L54 26"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </div>
-      <div className="app-sidebar-promo-text">{props.text}</div>
-    </div>
-  );
+/** frames in reading order, refreshed (at most once per frame) as the scene changes */
+const useSlides = () => {
+  const excalidrawAPI = useExcalidrawAPI();
+  const [slides, setSlides] = useState<Slide[]>([]);
+
+  useEffect(() => {
+    if (!excalidrawAPI) {
+      return;
+    }
+    let key = "";
+    let frame = 0;
+
+    const update = () => {
+      const next = getSlides(excalidrawAPI.getSceneElements());
+      const nextKey = getSlidesKey(next);
+      if (nextKey !== key) {
+        key = nextKey;
+        setSlides(next);
+      }
+    };
+
+    update();
+    const unsubscribe = excalidrawAPI.onChange(() => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(update);
+    });
+
+    return () => {
+      unsubscribe();
+      cancelAnimationFrame(frame);
+    };
+  }, [excalidrawAPI]);
+
+  return slides;
 };
 
 export const AppSidebar = () => {
-  const { theme, openSidebar } = useUIAppState();
+  const { t } = useI18n();
+  const { openSidebar } = useUIAppState();
+  const slides = useSlides();
+  const presentation = useAtomValue(presentationAPIAtom);
+  const presentationState = useAtomValue(presentationStateAtom);
+  const activeIndex = presentationState.active ? presentationState.index : -1;
 
   return (
     <DefaultSidebar>
       <DefaultSidebar.TabTriggers>
         <Sidebar.TabTrigger
-          tab="comments"
-          style={{ opacity: openSidebar?.tab === "comments" ? 1 : 0.4 }}
-        >
-          {messageCircleIcon}
-        </Sidebar.TabTrigger>
-        <Sidebar.TabTrigger
-          tab="presentation"
-          style={{ opacity: openSidebar?.tab === "presentation" ? 1 : 0.4 }}
+          tab={SLIDES_SIDEBAR_TAB}
+          title={t("presentation.title")}
+          style={{ opacity: openSidebar?.tab === SLIDES_SIDEBAR_TAB ? 1 : 0.4 }}
         >
           {presentationIcon}
         </Sidebar.TabTrigger>
       </DefaultSidebar.TabTriggers>
-      <Sidebar.Tab tab="comments">
-        <div className="app-sidebar-promo-container">
-          <div
-            className="app-sidebar-promo-image"
-            style={{
-              ["--image-source" as any]: `url(/sidebar-comments-promo-${
-                theme === THEME.DARK ? "dark" : "light"
-              }.jpg)`,
-              opacity: 0.9,
-            }}
+      <Sidebar.Tab tab={SLIDES_SIDEBAR_TAB} className="AppSidebar__slides">
+        <div className="AppSidebar__slidesActions">
+          <FilledButton
+            size="large"
+            icon={playerPlayIcon}
+            label={t("presentation.present")}
+            disabled={!slides.length}
+            onClick={() => presentation?.start(0)}
           />
-          <SidebarPromoCopy text="Make comments with Excalidraw+" />
-          <LinkButton
-            href={`${
-              import.meta.env.VITE_APP_PLUS_LP
-            }/plus?utm_source=excalidraw&utm_medium=app&utm_content=comments_promo#excalidraw-redirect`}
-          >
-            Sign up now
-          </LinkButton>
         </div>
-      </Sidebar.Tab>
-      <Sidebar.Tab tab="presentation" className="px-3">
-        <div className="app-sidebar-promo-container">
-          <div
-            className="app-sidebar-promo-image"
-            style={{
-              ["--image-source" as any]: `url(/sidebar-presentation-promo-${
-                theme === THEME.DARK ? "dark" : "light"
-              }.jpg)`,
-              opacity: 0.7,
-            }}
-          />
-          <SidebarPromoCopy text="Create presentation with Excalidraw+" />
-          <LinkButton
-            href={`${
-              import.meta.env.VITE_APP_PLUS_LP
-            }/plus?utm_source=excalidraw&utm_medium=app&utm_content=presentations_promo#excalidraw-redirect`}
-          >
-            Sign up now
-          </LinkButton>
-        </div>
+        {slides.length === 0 ? (
+          <p className="AppSidebar__slidesEmpty">
+            {t("presentation.noFrames")}
+          </p>
+        ) : (
+          <>
+            <p className="AppSidebar__slidesHint">
+              {t("presentation.orderHint")}
+            </p>
+            <ol className="AppSidebar__slidesList">
+              {slides.map((slide, index) => (
+                <li key={slide.id}>
+                  <button
+                    type="button"
+                    className={clsx("AppSidebar__slide", {
+                      "AppSidebar__slide--active": index === activeIndex,
+                    })}
+                    onClick={() => {
+                      if (presentationState.active) {
+                        presentation?.goTo(index);
+                      } else {
+                        presentation?.showSlide(slide);
+                      }
+                    }}
+                  >
+                    <span className="AppSidebar__slideNumber">{index + 1}</span>
+                    <span className="AppSidebar__slideTitle">
+                      {getFrameLikeTitle(slide)}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ol>
+          </>
+        )}
       </Sidebar.Tab>
     </DefaultSidebar>
   );

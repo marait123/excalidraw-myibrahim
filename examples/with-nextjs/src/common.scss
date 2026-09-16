@@ -13,3 +13,14 @@ a {
 .page-title {
   text-align: center;
 }
+
+.credit {
+  text-align: center;
+  font-size: 14px;
+  color: #868e96;
+
+  a {
+    font-size: inherit;
+    font-weight: 500;
+  }
+}

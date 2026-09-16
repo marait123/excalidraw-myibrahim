@@ -8,8 +8,8 @@ import type {
 } from "@excalidraw/element/types";
 import type { AppState, BinaryFileData } from "@excalidraw/excalidraw/types";
 
-import { STORAGE_KEYS } from "./app_constants";
 import { LocalData } from "./data/LocalData";
+import { getActiveProjectId, ProjectsStorage } from "./data/projects";
 
 const EVENT_REQUEST_SCENE = "REQUEST_SCENE";
 
@@ -40,29 +40,20 @@ type MESSAGE_FROM_EDITOR = MESSAGE_ERROR | MESSAGE_SCENE_DATA | MESSAGE_READY;
 // -----------------------------------------------------------------------------
 
 const parseSceneData = async ({
-  rawElementsString,
-  rawAppStateString,
+  elements,
+  appState,
 }: {
-  rawElementsString: string | null;
-  rawAppStateString: string | null;
+  elements: OrderedExcalidrawElement[] | null;
+  appState: Pick<AppState, "viewBackgroundColor"> | null;
 }): Promise<MESSAGE_SCENE_DATA> => {
-  if (!rawElementsString || !rawAppStateString) {
+  if (!elements || !appState) {
     throw new ExcalidrawError("Elements or appstate is missing.");
   }
 
   try {
-    const elements = JSON.parse(
-      rawElementsString,
-    ) as OrderedExcalidrawElement[];
-
     if (!elements.length) {
       throw new ExcalidrawError("Scene is empty, nothing to export.");
     }
-
-    const appState = JSON.parse(rawAppStateString) as Pick<
-      AppState,
-      "viewBackgroundColor"
-    >;
 
     const fileIds = elements.reduce((acc, el) => {
       if ("fileId" in el && el.fileId) {
@@ -175,13 +166,19 @@ export const ExcalidrawPlusIframeExport = () => {
             throw new ExcalidrawError("Failed to verify JWT");
           }
 
+          const activeProjectId = getActiveProjectId();
+          const activeProject = activeProjectId
+            ? await ProjectsStorage.loadProject(activeProjectId)
+            : undefined;
+
           const parsedSceneData: MESSAGE_SCENE_DATA = await parseSceneData({
-            rawAppStateString: localStorage.getItem(
-              STORAGE_KEYS.LOCAL_STORAGE_APP_STATE,
-            ),
-            rawElementsString: localStorage.getItem(
-              STORAGE_KEYS.LOCAL_STORAGE_ELEMENTS,
-            ),
+            elements:
+              (activeProject?.elements as OrderedExcalidrawElement[]) ?? null,
+            appState:
+              (activeProject?.appState as Pick<
+                AppState,
+                "viewBackgroundColor"
+              >) ?? null,
           });
 
           event.source!.postMessage(parsedSceneData, {

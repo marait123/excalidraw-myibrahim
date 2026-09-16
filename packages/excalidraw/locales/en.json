@@ -435,6 +435,18 @@
   "errorDialog": {
     "title": "Error"
   },
+  "projectsDialog": {
+    "title": "My Projects",
+    "newProject": "New project",
+    "untitled": "Untitled",
+    "empty": "No projects yet.",
+    "loading": "Loading projects...",
+    "current": "Current",
+    "rename": "Rename",
+    "delete": "Delete",
+    "confirmDelete": "Click again to delete",
+    "updated": "Updated"
+  },
   "progressDialog": {
     "title": "Saving",
     "defaultMessage": "Preparing to save..."

@@ -2,6 +2,7 @@ import {
   loginIcon,
   ExcalLogo,
   eyeIcon,
+  LibraryIcon,
 } from "@excalidraw/excalidraw/components/icons";
 import { useI18n } from "@excalidraw/excalidraw/i18n";
 import { MainMenu } from "@excalidraw/excalidraw/index";
@@ -22,10 +23,35 @@ export const AppMainMenu: React.FC<{
   isCollabEnabled: boolean;
   theme: Theme | "system";
   refresh: () => void;
+  activeProjectName: string | null;
+  onOpenProjects: () => void;
 }> = React.memo((props) => {
   const { t } = useI18n();
   return (
     <MainMenu>
+      {props.activeProjectName && (
+        <MainMenu.ItemCustom>
+          <div
+            title={props.activeProjectName}
+            style={{
+              padding: "0.25rem 0",
+              fontWeight: 600,
+              fontSize: "0.8125rem",
+              opacity: 0.7,
+              width: "100%",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {props.activeProjectName}
+          </div>
+        </MainMenu.ItemCustom>
+      )}
+      <MainMenu.Item icon={LibraryIcon} onSelect={props.onOpenProjects}>
+        {t("projectsDialog.title")}
+      </MainMenu.Item>
+      <MainMenu.Separator />
       <MainMenu.DefaultItems.LoadScene />
       <MainMenu.DefaultItems.SaveToActiveFile />
       <MainMenu.DefaultItems.Export />

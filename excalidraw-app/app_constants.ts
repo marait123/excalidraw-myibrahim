@@ -37,16 +37,19 @@ export const FIREBASE_STORAGE_PREFIXES = {
 export const ROOM_ID_BYTES = 10;
 
 export const STORAGE_KEYS = {
-  LOCAL_STORAGE_ELEMENTS: "excalidraw",
-  LOCAL_STORAGE_APP_STATE: "excalidraw-state",
+  // do not use apart from the one-time migration into IndexedDB projects
+  __LEGACY_LOCAL_STORAGE_ELEMENTS: "excalidraw",
+  __LEGACY_LOCAL_STORAGE_APP_STATE: "excalidraw-state",
   LOCAL_STORAGE_COLLAB: "excalidraw-collab",
   LOCAL_STORAGE_THEME: "excalidraw-theme",
   LOCAL_STORAGE_DEBUG: "excalidraw-debug",
+  LOCAL_STORAGE_ACTIVE_PROJECT_ID: "excalidraw-active-project-id",
   VERSION_DATA_STATE: "version-dataState",
   VERSION_FILES: "version-files",
 
   IDB_LIBRARY: "excalidraw-library",
   IDB_TTD_CHATS: "excalidraw-ttd-chats",
+  IDB_PROJECTS: "excalidraw-projects",
 
   // do not use apart from migrations
   __LEGACY_LOCAL_STORAGE_LIBRARY: "excalidraw-library",

@@ -67,10 +67,10 @@ module.exports.woff2BrowserPlugin = () => {
         return code.replace(
           "<!-- PLACEHOLDER:EXCALIDRAW_APP_FONTS -->",
           `<script>
-        // point into our CDN in prod, fallback to root (excalidraw.com) domain in case of issues
+        // prefer the fonts shipped with this build (same origin), fall back to the excalidraw.com CDN
         window.EXCALIDRAW_ASSET_PATH = [
-          "${OSS_FONTS_CDN}",
           "${OSS_FONTS_FALLBACK}",
+          "${OSS_FONTS_CDN}",
         ];
       </script>
 

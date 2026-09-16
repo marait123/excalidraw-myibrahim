@@ -1,4 +1,7 @@
-import { loginIcon } from "@excalidraw/excalidraw/components/icons";
+import {
+  loginIcon,
+  ExternalLinkIcon,
+} from "@excalidraw/excalidraw/components/icons";
 import { POINTER_EVENTS } from "@excalidraw/common";
 import { useI18n } from "@excalidraw/excalidraw/i18n";
 import { WelcomeScreen } from "@excalidraw/excalidraw/index";
@@ -75,6 +78,13 @@ export const AppWelcomeScreen: React.FC<{
               {t("labels.signUp")}
             </WelcomeScreen.Center.MenuItemLink>
           )}
+          <WelcomeScreen.Center.MenuItemLink
+            href="https://myibrahim.cloud/"
+            shortcut={null}
+            icon={ExternalLinkIcon}
+          >
+            Developed by myibrahim.cloud
+          </WelcomeScreen.Center.MenuItemLink>
         </WelcomeScreen.Center.Menu>
       </WelcomeScreen.Center>
     </WelcomeScreen>

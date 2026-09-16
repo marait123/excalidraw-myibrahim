@@ -19,6 +19,19 @@ export const AppFooter = React.memo(
         >
           {isVisualDebuggerEnabled() && <DebugFooter onChange={onChange} />}
           {!isExcalidrawPlusSignedUser && <EncryptedIcon />}
+          <a
+            href="https://myibrahim.cloud/"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              fontSize: "0.75rem",
+              color: "var(--color-gray-60)",
+              whiteSpace: "nowrap",
+              textDecoration: "none",
+            }}
+          >
+            Developed by myibrahim.cloud
+          </a>
         </div>
       </Footer>
     );

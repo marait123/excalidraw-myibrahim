@@ -3,6 +3,7 @@ import {
   ExcalLogo,
   eyeIcon,
   LibraryIcon,
+  ExternalLinkIcon,
 } from "@excalidraw/excalidraw/components/icons";
 import { useI18n } from "@excalidraw/excalidraw/i18n";
 import { MainMenu } from "@excalidraw/excalidraw/index";
@@ -77,6 +78,13 @@ export const AppMainMenu: React.FC<{
         Excalidraw+
       </MainMenu.ItemLink>
       <MainMenu.DefaultItems.Socials />
+      <MainMenu.ItemLink
+        icon={ExternalLinkIcon}
+        href="https://myibrahim.cloud/"
+        className=""
+      >
+        Developed by myibrahim.cloud
+      </MainMenu.ItemLink>
       <MainMenu.ItemLink
         icon={loginIcon}
         href={`${import.meta.env.VITE_APP_PLUS_APP}${

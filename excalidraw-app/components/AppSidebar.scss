@@ -15,6 +15,16 @@
     }
   }
 
+  .AppSidebar__slidesExport {
+    display: flex;
+    gap: 0.5rem;
+
+    .ExcButton {
+      flex: 1;
+      min-width: 0;
+    }
+  }
+
   .AppSidebar__slidesEmpty,
   .AppSidebar__slidesHint {
     margin: 0;

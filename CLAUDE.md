@@ -80,6 +80,18 @@ common  →  math  →  element  →  excalidraw  →  excalidraw-app
 - **Actions are a command pattern**: every user-triggerable operation (toolbar button, menu item, keyboard shortcut) is an `Action` object registered with a central `ActionManager`, not an ad-hoc event handler.
 - Builds use **esbuild** for the packages and **Vite** for the app; path aliases for `@excalidraw/*` packages are defined in root `tsconfig.base.json` and mirrored in `vitest.config.mts` (pointing straight at each package's `src`), so tests and typechecking run against source, not built output.
 
+## Non-negotiable: stay file-format compatible with upstream Excalidraw
+
+This fork adds features on top of Excalidraw, but **a `.excalidraw` file written here must open in the real excalidraw.com, and any file from excalidraw.com must open here** — same for `.excalidrawlib` libraries and the PNG/SVG "embed scene" payloads.
+
+Practically, that means:
+
+- **Never change the serialized shape** of a scene or an element. Treat `packages/excalidraw/data/json.ts` (`serializeAsJSON`/`serializeLibraryAsJSON`), `data/blob.ts`, `data/restore.ts`, `data/encode.ts`, `packages/element/src/types.ts` and `scene/export.ts` as upstream-owned. Don't add fields to `ExcalidrawElement`, don't add top-level keys to the exported JSON, and don't bump `VERSIONS`/`EXPORT_DATA_TYPES`.
+- **Fork-specific state goes in app-level storage, not in the file.** The multi-project workspace is the model to copy: projects live in IndexedDB (`excalidraw-app/data/projects.ts`) and each project stores a plain elements array + the same `StorableAppState` subset upstream already persists — so "Save to disk" still emits a stock `.excalidraw` file.
+- **Features should be expressed with existing element types.** Presentation mode is the model here: slides are ordinary frames, so a deck round-trips through upstream Excalidraw with no custom data at all. If a feature genuinely needs per-element metadata, use the upstream-sanctioned `customData` field — never a new top-level property.
+- **New export formats are additive only.** PDF/PPTX export renders slides to images; it doesn't alter or replace the `.excalidraw` format.
+- Before touching anything under `packages/excalidraw/data/` or `packages/element/src/types.ts`, stop and reconsider — that's the compatibility boundary. If a change there is truly unavoidable, it must round-trip: export from this fork → open on excalidraw.com → export again → open here.
+
 ## Project-wide conventions
 
 These come from `AGENTS.md` and `.github/copilot-instructions.md` and apply repo-wide:

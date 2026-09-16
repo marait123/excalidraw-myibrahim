@@ -454,7 +454,11 @@
     "next": "Next slide",
     "previous": "Previous slide",
     "noFrames": "No slides yet. Use the Frame tool (F) to draw one — every frame becomes a slide.",
-    "orderHint": "Slides follow your frames in reading order: top to bottom, then left to right."
+    "orderHint": "Slides follow your frames in reading order: top to bottom, then left to right.",
+    "exportPdf": "Export PDF",
+    "exportPptx": "Export PPTX",
+    "exporting": "Preparing your slides…",
+    "exportFailed": "Couldn't export the slides."
   },
   "progressDialog": {
     "title": "Saving",

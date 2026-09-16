@@ -5,6 +5,7 @@ import {
 } from "@excalidraw/excalidraw";
 import { FilledButton } from "@excalidraw/excalidraw/components/FilledButton";
 import {
+  exportToFileIcon,
   playerPlayIcon,
   presentationIcon,
 } from "@excalidraw/excalidraw/components/icons";
@@ -66,10 +67,40 @@ const useSlides = () => {
 export const AppSidebar = () => {
   const { t } = useI18n();
   const { openSidebar } = useUIAppState();
+  const excalidrawAPI = useExcalidrawAPI();
   const slides = useSlides();
   const presentation = useAtomValue(presentationAPIAtom);
   const presentationState = useAtomValue(presentationStateAtom);
   const activeIndex = presentationState.active ? presentationState.index : -1;
+  const [isExporting, setIsExporting] = useState(false);
+
+  const exportSlides = async (format: "pdf" | "pptx") => {
+    if (!excalidrawAPI || !slides.length || isExporting) {
+      return;
+    }
+    setIsExporting(true);
+    excalidrawAPI.setToast({ message: t("presentation.exporting") });
+    try {
+      const { exportSlidesToPDF, exportSlidesToPPTX } = await import(
+        "../presentation/exportSlides"
+      );
+      const name = excalidrawAPI.getName();
+      if (format === "pdf") {
+        await exportSlidesToPDF(excalidrawAPI, slides, name);
+      } else {
+        await exportSlidesToPPTX(excalidrawAPI, slides, name);
+      }
+      excalidrawAPI.setToast(null);
+    } catch (error: any) {
+      console.error(error);
+      excalidrawAPI.setToast({
+        message: t("presentation.exportFailed"),
+        duration: 5000,
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   return (
     <DefaultSidebar>
@@ -90,6 +121,24 @@ export const AppSidebar = () => {
             label={t("presentation.present")}
             disabled={!slides.length}
             onClick={() => presentation?.start(0)}
+          />
+        </div>
+        <div className="AppSidebar__slidesExport">
+          <FilledButton
+            size="medium"
+            variant="outlined"
+            icon={exportToFileIcon}
+            label={t("presentation.exportPdf")}
+            disabled={!slides.length || isExporting}
+            onClick={() => exportSlides("pdf")}
+          />
+          <FilledButton
+            size="medium"
+            variant="outlined"
+            icon={exportToFileIcon}
+            label={t("presentation.exportPptx")}
+            disabled={!slides.length || isExporting}
+            onClick={() => exportSlides("pptx")}
           />
         </div>
         {slides.length === 0 ? (

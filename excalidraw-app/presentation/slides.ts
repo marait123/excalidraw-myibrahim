@@ -3,9 +3,11 @@ import { isFrameLikeElement } from "@excalidraw/element";
 import type {
   ExcalidrawElement,
   ExcalidrawFrameLikeElement,
+  NonDeleted,
 } from "@excalidraw/element/types";
 
-export type Slide = ExcalidrawFrameLikeElement;
+/** deleted frames are filtered out by `getSlides`, so a slide is always live */
+export type Slide = NonDeleted<ExcalidrawFrameLikeElement>;
 
 /**
  * Frames become slides, ordered the way you'd read a page: rows from top to

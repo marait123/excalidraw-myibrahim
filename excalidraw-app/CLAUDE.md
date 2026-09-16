@@ -43,7 +43,18 @@ On mount, `ensureActiveProject()` (`data/projects.ts`) resolves which project to
 - **`PresentationOverlay.tsx`** — the bottom-center control bar. It renders _outside_ `<Excalidraw>` (a sibling in `App.tsx`) so zen mode can't hide it; that's why it uses the plain `t()` function rather than `useI18n()` (the editor-scoped i18n provider doesn't exist outside the editor tree — the collab test catches this if it regresses).
 - **`components/AppSidebar.tsx`** — the "Slides" tab of the default sidebar: lists slides (subscribes to `excalidrawAPI.onChange`, refreshing at most once per animation frame), click to preview a frame or jump while presenting, plus a Present button.
 
+### Slide export (PDF / PPTX)
+
+`presentation/exportSlides.ts` renders each frame via `exportToCanvas({ exportingFrame })` (2x for crispness, clipped to the frame exactly like presenting) and then:
+
+- **PDF** (`jspdf`) — one page per slide, each page sized to its own frame, so mixed frame sizes export without letterboxing.
+- **PPTX** (`pptxgenjs`) — a `.pptx` has one deck-wide slide size, so the first frame defines it and any differently-shaped frame is centered and contain-fitted rather than stretched. Sizes convert at 96px/inch, clamped to PowerPoint's 56-inch maximum.
+
+Both libraries are **dynamically imported** inside the export functions so they stay out of the main bundle, and rendering is sequential (canvas-heavy; parallel rendering of a large deck can exhaust memory). Triggered from the Slides sidebar tab. These are additive output formats — they don't touch the `.excalidraw` format (see the compatibility rule in the root [CLAUDE.md](../CLAUDE.md)).
+
 There are no Excalidraw+ upsell surfaces left in this app (banner, sign-up links, promo sidebar tabs, export-to-Plus, the `/excalidraw-plus-export` route and the `excplus-*` cookie checks were all removed).
+
+**Compatibility note:** everything this app adds (projects, presentation, slide export) lives in app-level storage or is expressed with stock element types — frames for slides, a plain elements array + `StorableAppState` per project. "Save to disk" still writes a stock `.excalidraw` file that opens on excalidraw.com, and vice versa. See the root [CLAUDE.md](../CLAUDE.md) for the full rule.
 
 ## Collaboration and encryption
 

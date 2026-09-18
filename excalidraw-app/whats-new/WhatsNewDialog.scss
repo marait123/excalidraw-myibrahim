@@ -1,0 +1,450 @@
+@import "../../packages/excalidraw/css/variables.module.scss";
+
+.excalidraw {
+  .WhatsNewDialog {
+    // this dialog draws its own close button in both layouts
+    .Dialog__close {
+      display: none;
+    }
+
+    .Dialog__content {
+      padding: 0;
+    }
+
+    &__view {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      animation: WhatsNewDialog__in 220ms ease-out;
+    }
+
+    // ---- shared -----------------------------------------------------------
+
+    &__close {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 2rem;
+      height: 2rem;
+      margin-left: auto;
+      border: none;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--color-gray-60);
+      cursor: pointer;
+
+      svg {
+        width: 1rem;
+        height: 1rem;
+      }
+
+      &:hover {
+        background: var(--button-hover-bg, var(--island-bg-color));
+        color: var(--text-primary-color);
+      }
+    }
+
+    // ---- overview ---------------------------------------------------------
+
+    &__header {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+
+    &__sparkle {
+      font-size: 2rem;
+      line-height: 1;
+      animation: WhatsNewDialog__twinkle 2.4s ease-in-out infinite;
+    }
+
+    &__headerText {
+      min-width: 0;
+    }
+
+    &__title {
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+
+    &__lead {
+      margin: 0.25rem 0 0;
+      color: var(--color-gray-60);
+    }
+
+    &__releaseDate {
+      margin: 0 0 0.5rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--color-gray-60);
+    }
+
+    &__grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.75rem;
+
+      @include isMobile {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    &__card {
+      display: flex;
+      align-items: center;
+      gap: 0.875rem;
+      padding: 0.875rem 1rem;
+      border: 1px solid var(--dialog-border-color);
+      border-radius: 14px;
+      background: var(--island-bg-color);
+      color: inherit;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+      transition: transform 150ms ease, box-shadow 150ms ease,
+        border-color 150ms ease;
+
+      &:hover,
+      &:focus-visible {
+        border-color: var(--accent);
+        box-shadow: 0 6px 18px -8px var(--accent);
+        transform: translateY(-2px);
+        outline: none;
+      }
+
+      &:hover .WhatsNewDialog__cardChevron {
+        transform: translateX(3px);
+        opacity: 1;
+      }
+    }
+
+    &__cardEmoji {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 2.75rem;
+      height: 2.75rem;
+      border-radius: 12px;
+      font-size: 1.5rem;
+      background: color-mix(in srgb, var(--accent) 16%, transparent);
+    }
+
+    &__cardText {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.125rem;
+    }
+
+    &__cardTitle {
+      font-weight: 600;
+    }
+
+    &__cardTagline {
+      font-size: 0.8125rem;
+      color: var(--color-gray-60);
+    }
+
+    &__cardChevron {
+      flex-shrink: 0;
+      opacity: 0.5;
+      transition: transform 150ms ease, opacity 150ms ease;
+
+      svg {
+        width: 1rem;
+        height: 1rem;
+      }
+    }
+
+    &__footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    &__note {
+      margin: 0;
+      flex: 1 1 16rem;
+      font-size: 0.8125rem;
+      color: var(--color-gray-60);
+    }
+
+    &__footerActions,
+    &__detailButtons {
+      display: flex;
+      gap: 0.5rem;
+      margin-left: auto;
+    }
+
+    // ---- detail -----------------------------------------------------------
+
+    &__detailTop {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    &__back {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.25rem 0.5rem 0.25rem 0.25rem;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--color-primary);
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+
+      svg {
+        width: 1rem;
+        height: 1rem;
+      }
+
+      &:hover {
+        background: var(--button-hover-bg, var(--island-bg-color));
+      }
+    }
+
+    &__counter {
+      margin-left: auto;
+      font-size: 0.8125rem;
+      font-variant-numeric: tabular-nums;
+      color: var(--color-gray-60);
+    }
+
+    &__counter + &__close {
+      margin-left: 0;
+    }
+
+    &__detailBody {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      animation: WhatsNewDialog__in 220ms ease-out;
+    }
+
+    &__hero {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 11rem;
+      border-radius: 18px;
+      overflow: hidden;
+      background: radial-gradient(
+          circle at 25% 20%,
+          rgba(255, 255, 255, 0.35),
+          transparent 45%
+        ),
+        linear-gradient(
+          135deg,
+          color-mix(in srgb, var(--accent) 70%, white),
+          var(--accent)
+        );
+
+      @include isMobile {
+        height: 8.5rem;
+      }
+    }
+
+    &__heroEmoji {
+      font-size: 5rem;
+      line-height: 1;
+      filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.25));
+      animation: WhatsNewDialog__float 3.2s ease-in-out infinite;
+    }
+
+    &__heroImage {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    &__detailTitle {
+      margin: 0.25rem 0 0;
+      font-size: 1.375rem;
+      font-weight: 700;
+    }
+
+    &__detailDescription {
+      margin: 0;
+      line-height: 1.5;
+      color: var(--color-gray-70, var(--text-primary-color));
+    }
+
+    &__steps {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    &__step {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    &__stepNumber {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.625rem;
+      height: 1.625rem;
+      border-radius: 999px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.8125rem;
+      font-weight: 700;
+    }
+
+    &__detailActions {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    &__dots {
+      display: flex;
+      gap: 0.375rem;
+    }
+
+    &__dot {
+      width: 0.5rem;
+      height: 0.5rem;
+      padding: 0;
+      border: none;
+      border-radius: 999px;
+      background: var(--dialog-border-color);
+      cursor: pointer;
+      transition: width 200ms ease, background-color 200ms ease;
+
+      &--active {
+        width: 1.25rem;
+        background: var(--color-primary);
+      }
+    }
+
+    // ---- storage widget ---------------------------------------------------
+
+    &__storage {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      padding: 0.875rem 1rem;
+      border-radius: 12px;
+      background: color-mix(in srgb, var(--accent) 10%, transparent);
+    }
+
+    &__storageRow {
+      display: grid;
+      grid-template-columns: 9.5rem 1fr 4.5rem;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 0.8125rem;
+
+      @include isMobile {
+        grid-template-columns: 6.5rem 1fr 4rem;
+      }
+    }
+
+    &__storageLabel {
+      color: var(--color-gray-60);
+    }
+
+    &__storageBar {
+      height: 0.625rem;
+      border-radius: 999px;
+      background: var(--dialog-border-color);
+      overflow: hidden;
+
+      span {
+        display: block;
+        height: 100%;
+        border-radius: inherit;
+        background: var(--accent);
+        animation: WhatsNewDialog__grow 900ms ease-out;
+        transform-origin: left;
+      }
+
+      &--old span {
+        background: #fa5252;
+      }
+    }
+
+    &__storageValue {
+      font-weight: 700;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    &__storageUsed {
+      margin: 0.125rem 0 0;
+      font-size: 0.75rem;
+      color: var(--color-gray-60);
+    }
+  }
+}
+
+@keyframes WhatsNewDialog__in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes WhatsNewDialog__float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-2deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(2deg);
+  }
+}
+
+@keyframes WhatsNewDialog__twinkle {
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    transform: scale(1.12) rotate(8deg);
+  }
+}
+
+@keyframes WhatsNewDialog__grow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .excalidraw .WhatsNewDialog {
+    *,
+    & {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+}

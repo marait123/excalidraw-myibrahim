@@ -44,6 +44,8 @@ export const STORAGE_KEYS = {
   LOCAL_STORAGE_THEME: "excalidraw-theme",
   LOCAL_STORAGE_DEBUG: "excalidraw-debug",
   LOCAL_STORAGE_ACTIVE_PROJECT_ID: "excalidraw-active-project-id",
+  /** latest "What's new" release version this browser has been shown */
+  LOCAL_STORAGE_WHATS_NEW_SEEN: "excalidraw-whats-new-seen",
   VERSION_DATA_STATE: "version-dataState",
   VERSION_FILES: "version-files",
 

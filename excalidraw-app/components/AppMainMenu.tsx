@@ -3,6 +3,7 @@ import {
   LibraryIcon,
   ExternalLinkIcon,
   presentationIcon,
+  boltIcon,
 } from "@excalidraw/excalidraw/components/icons";
 import { useI18n } from "@excalidraw/excalidraw/i18n";
 import { MainMenu } from "@excalidraw/excalidraw/index";
@@ -15,6 +16,7 @@ import type { Theme } from "@excalidraw/element/types";
 import { LanguageList } from "../app-language/LanguageList";
 import { useAtomValue } from "../app-jotai";
 import { presentationAPIAtom } from "../presentation/usePresentation";
+import { openWhatsNew } from "../whats-new/whatsNew";
 
 import { saveDebugState } from "./DebugCanvas";
 
@@ -73,6 +75,9 @@ export const AppMainMenu: React.FC<{
       <MainMenu.DefaultItems.CommandPalette className="highlighted" />
       <MainMenu.DefaultItems.SearchMenu />
       <MainMenu.DefaultItems.Help />
+      <MainMenu.Item icon={boltIcon} onSelect={openWhatsNew}>
+        {t("whatsNew.title")}
+      </MainMenu.Item>
       <MainMenu.DefaultItems.ClearCanvas />
       <MainMenu.Separator />
       <MainMenu.DefaultItems.Socials />

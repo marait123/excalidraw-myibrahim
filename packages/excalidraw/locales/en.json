@@ -458,7 +458,22 @@
     "exportPdf": "Export PDF",
     "exportPptx": "Export PPTX",
     "exporting": "Preparing your slides…",
-    "exportFailed": "Couldn't export the slides."
+    "exportFailed": "Couldn't export the slides.",
+    "demoProjectName": "Presentation demo"
+  },
+  "whatsNew": {
+    "title": "What's new",
+    "introLead": "Everything you love about Excalidraw — plus:",
+    "updateLead": "Fresh since your last visit:",
+    "gotIt": "Got it",
+    "tour": "Take the tour",
+    "allUpdates": "All updates",
+    "next": "Next",
+    "done": "Done",
+    "storageBefore": "Original Excalidraw",
+    "storageNow": "This app, in your browser",
+    "storageUsed": "You're using {{used}} right now.",
+    "compatibilityNote": "Files stay compatible with the original Excalidraw — open them on excalidraw.com and back."
   },
   "progressDialog": {
     "title": "Saving",

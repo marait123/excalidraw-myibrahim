@@ -92,6 +92,23 @@ Practically, that means:
 - **New export formats are additive only.** PDF/PPTX export renders slides to images; it doesn't alter or replace the `.excalidraw` format.
 - Before touching anything under `packages/excalidraw/data/` or `packages/element/src/types.ts`, stop and reconsider — that's the compatibility boundary. If a change there is truly unavoidable, it must round-trip: export from this fork → open on excalidraw.com → export again → open here.
 
+## Required: keep "What's new" current with every user-facing change
+
+Users get a "What's new" popup describing what this app adds on top of Excalidraw and what changed since their last visit. It's driven entirely by `excalidraw-app/whats-new/releases.ts`, so **any change a user would notice — a new feature, a changed workflow, a removed or limited capability — must add an entry there in the same change.** Don't consider a feature done until it has one.
+
+- **Add a new release at the top of `RELEASES`**, with `version` = previous version + 1 and today's `date` (`YYYY-MM-DD`). Put everything shipped together in one release rather than one release per item.
+- **Scannable first, details on demand.** The popup opens on an overview of emoji cards (emoji + title + one-line tagline); clicking a card, or "Take the tour", opens a detail view with a hero, a short description, numbered steps, and an optional "show me" button. Never let it turn back into an article. Each item needs:
+  - `emoji` — one emoji that reads as the feature; `accent` — a `#rrggbb` color that tints its card and hero (vary it between items).
+  - `title` (≤ 40 chars) and `tagline` (≤ 60, the whole pitch in one line — compare with the original Excalidraw where that helps).
+  - `description` (≤ 220) — what it is and why it matters, in plain words for end users, not developers.
+  - `howTo` — 1–4 steps of ≤ 80 chars that name the real UI (menu item labels, sidebar tabs, keyboard shortcuts).
+  - Optional `action` (`{ type, label }`, label ≤ 30) — a button that closes the popup and _does_ the thing (opens the dialog, starts a demo). Prefer one whenever the feature can be demonstrated. A new action type needs a `WhatsNewActionType` value in `releases.ts`, a case in `onWhatsNewAction` in `excalidraw-app/App.tsx`, an icon in `ACTION_ICONS` in `WhatsNewDialog.tsx`, and an entry in the test's `ACTIONS` list.
+  - Optional `widget` (a live component in the detail view, e.g. `storageUsage`) or `image` (a screenshot/GIF URL under `public/` that replaces the emoji hero).
+- **Each release pops up exactly once per browser**: `showUnseenWhatsNew()` marks it seen the moment it opens, and returning users only see releases newer than the last one they saw. So **never edit a shipped release to announce something new** — those users have already seen it and won't be shown it again; add a new release instead. Fixing a typo in an old entry is fine.
+- Skip entries for refactors, internal fixes, and dependency bumps — only things users can see or do.
+- Be honest about limits in the copy (e.g. "live-collaboration rooms still have the original size limit"), and keep old entries accurate if a feature later changes — the full changelog is always one click away in the menu.
+- `excalidraw-app/tests/whatsNew.test.ts` enforces the structure and the length limits above (unique, increasing versions listed newest first; valid dates; 1–4 short steps; known action types) — run it after editing.
+
 ## Project-wide conventions
 
 These come from `AGENTS.md` and `.github/copilot-instructions.md` and apply repo-wide:

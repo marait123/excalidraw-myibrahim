@@ -31,6 +31,7 @@ import {
   resolvablePromise,
   isRunningInIframe,
   isDevEnv,
+  DEFAULT_SIDEBAR,
 } from "@excalidraw/common";
 import polyfill from "@excalidraw/excalidraw/polyfill";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -46,6 +47,7 @@ import {
   youtubeIcon,
   LibraryIcon,
   presentationIcon,
+  boltIcon,
 } from "@excalidraw/excalidraw/components/icons";
 import { isElementLink } from "@excalidraw/element";
 import {
@@ -145,14 +147,20 @@ import { AIComponents } from "./components/AI";
 
 import "./index.scss";
 
-import { AppSidebar } from "./components/AppSidebar";
+import { AppSidebar, SLIDES_SIDEBAR_TAB } from "./components/AppSidebar";
+import { createDemoDeckElements } from "./presentation/demoDeck";
 import { ProjectsDialog } from "./components/ProjectsDialog";
 import { PresentationOverlay } from "./presentation/PresentationOverlay";
+import { WhatsNewDialog } from "./whats-new/WhatsNewDialog";
+import { openWhatsNew, showUnseenWhatsNew } from "./whats-new/whatsNew";
+
 import {
   presentationAPIAtom,
   presentationStateAtom,
   usePresentation,
 } from "./presentation/usePresentation";
+
+import type { WhatsNewActionType } from "./whats-new/releases";
 
 import type { CollabAPI } from "./collab/Collab";
 
@@ -609,6 +617,9 @@ const ExcalidrawWrapper = () => {
       }).then(async (data) => {
         loadImages(data, /* isInitialLoad */ true);
         initialStatePromiseRef.current.promise.resolve(data.scene);
+        // after the scene (and any share-link confirm prompt) is settled, so
+        // the popup never stacks on top of another modal
+        showUnseenWhatsNew();
       });
     });
 
@@ -971,6 +982,43 @@ const ExcalidrawWrapper = () => {
   );
 
   // ---------------------------------------------------------------------------
+  // What's new "show me" buttons
+  // ---------------------------------------------------------------------------
+  const startPresentationDemo = useCallback(async () => {
+    if (!excalidrawAPI) {
+      return;
+    }
+    // a separate project, so the demo never lands in the user's own drawing
+    await createAndSwitchToNewProject(t("presentation.demoProjectName"));
+    excalidrawAPI.updateScene({
+      elements: createDemoDeckElements(),
+      captureUpdate: CaptureUpdateAction.NEVER,
+    });
+    // let the scene commit before the first slide is fitted
+    requestAnimationFrame(() => presentationAPI?.start(0));
+  }, [excalidrawAPI, createAndSwitchToNewProject, presentationAPI]);
+
+  const onWhatsNewAction = useCallback(
+    (action: WhatsNewActionType) => {
+      switch (action) {
+        case "openProjects":
+          setIsProjectsDialogOpen(true);
+          return;
+        case "openSlides":
+          excalidrawAPI?.toggleSidebar({
+            name: DEFAULT_SIDEBAR.name,
+            tab: SLIDES_SIDEBAR_TAB,
+            force: true,
+          });
+          return;
+        case "tryPresentation":
+          startPresentationDemo();
+      }
+    },
+    [excalidrawAPI, startPresentationDemo],
+  );
+
+  // ---------------------------------------------------------------------------
   // onExport — intercepts file save to wait for pending image loads
   // ---------------------------------------------------------------------------
   const onExport: Required<ExcalidrawProps>["onExport"] = useCallback(
@@ -1168,6 +1216,8 @@ const ExcalidrawWrapper = () => {
           />
         )}
 
+        <WhatsNewDialog onAction={onWhatsNewAction} />
+
         {errorMessage && (
           <ErrorDialog onClose={() => setErrorMessage("")}>
             {errorMessage}
@@ -1345,6 +1395,21 @@ const ExcalidrawWrapper = () => {
               perform: () => {
                 presentationAPI?.start(0);
               },
+            },
+            {
+              label: t("whatsNew.title"),
+              category: DEFAULT_CATEGORIES.app,
+              icon: boltIcon,
+              predicate: true,
+              keywords: [
+                "new",
+                "updates",
+                "changelog",
+                "release notes",
+                "features",
+                "help",
+              ],
+              perform: openWhatsNew,
             },
             {
               label: t("labels.installPWA"),

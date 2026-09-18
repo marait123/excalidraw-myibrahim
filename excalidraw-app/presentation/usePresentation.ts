@@ -45,7 +45,12 @@ const RESIZE_REFIT_DELAY = 150;
 
 type SavedViewState = Pick<
   AppState,
-  "viewModeEnabled" | "zenModeEnabled" | "scrollX" | "scrollY" | "zoom"
+  | "viewModeEnabled"
+  | "zenModeEnabled"
+  | "scrollX"
+  | "scrollY"
+  | "zoom"
+  | "frameRendering"
 >;
 
 const isEditableTarget = (target: EventTarget | null) => {
@@ -138,6 +143,7 @@ export const usePresentation = (
             scrollX: saved.scrollX,
             scrollY: saved.scrollY,
             zoom: saved.zoom,
+            frameRendering: saved.frameRendering,
           },
           captureUpdate: CaptureUpdateAction.NEVER,
         });
@@ -172,6 +178,7 @@ export const usePresentation = (
         scrollX: appState.scrollX,
         scrollY: appState.scrollY,
         zoom: appState.zoom,
+        frameRendering: appState.frameRendering,
       };
 
       // make sure the last edits are persisted, then hold autosave so the
@@ -188,6 +195,12 @@ export const usePresentation = (
           zenModeEnabled: true,
           openSidebar: null,
           selectedElementIds: {},
+          // a slide is its content: no frame name label or outline
+          frameRendering: {
+            ...appState.frameRendering,
+            name: false,
+            outline: false,
+          },
         },
         captureUpdate: CaptureUpdateAction.NEVER,
       });

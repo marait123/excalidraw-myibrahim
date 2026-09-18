@@ -97,3 +97,12 @@
     display: none;
   }
 }
+
+// zen mode still shows the menu button and zoom/undo controls; while
+// presenting they overlap the slide, and the presenter bar covers navigation
+.excalidraw-app.is-presenting {
+  .main-menu-trigger,
+  .layer-ui__wrapper__footer-left {
+    display: none;
+  }
+}
